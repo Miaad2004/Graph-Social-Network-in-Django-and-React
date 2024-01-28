@@ -25,6 +25,11 @@ class Graph:
             for connections in self._graph.values():
                 connections.discard(key)
     
+    def remove_connection(self, key1: str, key2: str) -> None:
+        if key1 in self._graph and key2 in self._graph:
+            self._graph[key1].discard(key2)
+            self._graph[key2].discard(key1)
+    
     def are_connected(self, key1: str, key2: str) -> bool:
         return key2 in self._graph[key1]
     
