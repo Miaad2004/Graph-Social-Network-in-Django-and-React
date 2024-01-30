@@ -15,7 +15,7 @@ class ApiConfig(AppConfig):
         for connection in all_connections:
             global_graph.add_connection(str(connection.user1.id), str(connection.user2.id))
         
-        print("graphhhhhhhh")
+        print("graph:")
         print(global_graph)
         import api.signals
     
