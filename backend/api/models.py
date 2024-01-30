@@ -1,18 +1,18 @@
-from django.conf import settings
 from django.db import models
-from django.contrib.auth.models import User
-
 from django.contrib.auth.models import AbstractUser
 
+
 class CustomUser(AbstractUser):
-    date_of_birth = models.DateField()
-    university_location = models.CharField(max_length=100, blank=True)
-    field = models.CharField(max_length=100, blank=True)
+    birthday = models.DateField()
+    university = models.CharField(max_length=100, blank=False)
+    field = models.CharField(max_length=100, blank=False)
     workplace = models.CharField(max_length=100, blank=True)
-    specialties = models.JSONField(default=list, null=True, blank=True)
+    specialties = models.JSONField(default=list, blank=True)
+    profile_photo = models.ImageField(upload_to='profile_images/', null=True, blank=True)
     
     def __str__(self):
         return self.username
+
 
 class Connection(models.Model):
     user1 = models.ForeignKey(CustomUser, related_name='user1', on_delete=models.CASCADE)
