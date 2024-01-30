@@ -44,16 +44,15 @@ def add_user(user):
     user['birthday'] = user.pop('dateOfBirth', None)
     user['university'] = user.pop('universityLocation', None)
     user['birthday'] = user['birthday'].replace('/', '-')
+    user['specialties'] = ','.join(user['specialties'])
     return send_request(user, "register/")
 
 def add_all_users():
     for i, user in enumerate(JSON_DATA):
         try:
             response = add_user(user)
-            if response.status_code != 200:
+            if (response.status_code != 201 and response.status_code != 200) or response.json()['error'] != None:
                 raise Exception(response.text)
-            
-            print(f"{i + 1}-OK")
             
         except Exception as e:
             print(f"Sample index: {i}, Error: {e}")
@@ -74,7 +73,7 @@ def login(username, password):
 def login_and_get_token(user):
     login_response = login(get_username(user['name']), DEFAULT_PASS)
     
-    if login_response.status_code != 200:
+    if login_response.status_code != 200 or login_response.json()['error'] != None:
         raise Exception(f"Login failed: {login_response.text}")
     
     login_response = json.loads(login_response.text)
@@ -92,13 +91,13 @@ def add_connections_for_user(user, token):
         try:
             response = add_connection(username, token)
             
-            if response.status_code != 200:
+            if response.status_code != 200 or response.json()['error'] != None:
                 raise Exception(f"Failed adding connection: {response.text}")
             
             print(f"ID:{user['id']}_to_Id:{connection_ids[i]}-OK")
             
         except Exception as e:
-            print(f"Error adding connection from ID:{user['id']} to ID:{connection_ids[j]}")
+            print(f"Error adding connection from ID:{user['id']} to ID:{connection_ids[i]}")
             print(f"Sample index: {i + 1}")
             print(e)
             
