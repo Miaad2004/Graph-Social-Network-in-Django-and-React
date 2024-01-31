@@ -2,11 +2,6 @@ from collections import defaultdict
 import unittest
 from typing import List
 
-class Node:
-    def __init__(self, key, data):
-        self.key = key
-        self.data = data
-
 class Graph:
     def __init__(self):
         """ Undirected graph implementation"""
@@ -16,7 +11,7 @@ class Graph:
         self._graph[key1].add(key2)
         self._graph[key2].add(key1)
     
-    def add_node(self, node: Node) -> None:
+    def add_node(self, node) -> None:
         self._graph[node.key] = set()
     
     def remove_node(self, key: str) -> None:
@@ -36,6 +31,15 @@ class Graph:
     def get_shortest_path(start_key: str, end_key: str) -> List[str]:
         pass
     
+    def search(target, algorithm='DFS'):
+        assert algorithm in ('DFS', 'BFS')
+        
+    def DFS():
+        pass
+    
+    def BFS():
+        pass
+    
     def __str__(self) -> str:
         return '\n'.join(f"{node}: {', '.join(connections)}" for node, connections in self._graph.items())
 
@@ -49,7 +53,7 @@ class TestGraph(unittest.TestCase):
 
     def test_add_node(self):
         graph = Graph()
-        node = Node('A', 'Data A')
+        node = 'A'
         graph.add_node(node)
         self.assertTrue('A' in graph._graph)
         self.assertEqual(len(graph._graph['A']), 0)
