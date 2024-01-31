@@ -30,6 +30,7 @@ function Navbar(props) {
                     imagePath: response.data.user.profile_photo ? API_URL + response.data.user.profile_photo: defaultUserImage,
                     userName: response.data.user.username || 'User Name',
                     university: response.data.user.university || 'University',
+                    field: response.data.user.field || 'Field',
                 });
             } 
             
@@ -78,7 +79,7 @@ function Navbar(props) {
 
                 <div className="d-flex flex-column justify-content-center align-items-center">
                     <Image src={user.imagePath} roundedCircle width={128} height={128} />
-                    <p className="text-center mt-2">{user.userName}<br />{user.university}</p>
+                    <p className="text-center mt-2">{user.userName}<br />{user.university}<br />{user.field}</p>
                 </div>
                 <hr className="my-2" />
                 <Nav className="flex-column">
