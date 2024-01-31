@@ -1,6 +1,7 @@
 from collections import defaultdict
 import unittest
 from typing import List
+from py2neo import Graph as NeoGraph, Node, Relationship
 
 class Graph:
     def __init__(self):
@@ -11,8 +12,8 @@ class Graph:
         self._graph[key1].add(key2)
         self._graph[key2].add(key1)
     
-    def add_node(self, node) -> None:
-        self._graph[node.key] = set()
+    def add_node(self, key) -> None:
+        self._graph[key] = set()
     
     def remove_node(self, key: str) -> None:
         if key in self._graph:
@@ -28,20 +29,59 @@ class Graph:
     def are_connected(self, key1: str, key2: str) -> bool:
         return key2 in self._graph[key1]
     
-    def get_shortest_path(start_key: str, end_key: str) -> List[str]:
-        pass
-    
-    def search(target, algorithm='DFS'):
+    def search(self, start: str, condition: callable, algorithm: str = 'DFS') -> List[str]:
         assert algorithm in ('DFS', 'BFS')
-        
-    def DFS():
-        pass
-    
-    def BFS():
-        pass
+        if algorithm == 'DFS':
+            return self.DFS(start, condition)
+        else:
+            return self.BFS(start, condition)
+
+    def DFS(self, start: str, condition: callable = lambda x: True, max_depth: int = -1) -> List[str]:
+        visited = set()
+        stack = [(start, 0)]
+        result = []
+        while stack:
+            node, depth = stack.pop()
+            if node not in visited and (max_depth == -1 or depth <= max_depth):
+                visited.add(node)
+                if condition(node):
+                    result.append((node, depth))
+                stack.extend((neighbour, depth + 1) for neighbour in self._graph[node])
+        return result
+
+    def BFS(self, start: str, condition: callable = lambda x: True, max_depth: int = -1) -> List[str]:
+        print(self)
+        visited = set()
+        queue = [(start, 0)]  
+        result = []
+        while queue:
+            node, depth = queue.pop(0) 
+            if node not in visited:
+                visited.add(node)
+                if condition(node):
+                    result.append((node, depth))
+                if max_depth == -1 or depth < max_depth:  
+                    queue.extend((neighbour, depth + 1) for neighbour in self._graph[node])
+        return result
     
     def __str__(self) -> str:
         return '\n'.join(f"{node}: {', '.join(connections)}" for node, connections in self._graph.items())
+    
+    def save_to_neo4j(self, uri: str="bolt://localhost:7687", user: str="neo4j", password: str="123456789") -> None:
+        neo_graph = NeoGraph(uri, auth=(user, password))
+
+        neo_graph.delete_all()
+
+        neo_nodes = {}
+
+        for node in self._graph:
+            neo_nodes[node] = Node("GraphNode", name=node)
+            neo_graph.create(neo_nodes[node])
+
+        for node, connections in self._graph.items():
+            for connection in connections:
+                relationship = Relationship(neo_nodes[node], "CONNECTED_TO", neo_nodes[connection])
+                neo_graph.create(relationship)
 
 
 class TestGraph(unittest.TestCase):
@@ -74,6 +114,35 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(graph.are_connected('A', 'B'))
         self.assertTrue(graph.are_connected('B', 'C'))
         self.assertFalse(graph.are_connected('A', 'C'))
+    
+    def test_bfs_depth(self):
+        graph = Graph()
+        graph.add_connection('A', 'B')
+        graph.add_connection('A', 'C')
+        graph.add_connection('B', 'D')
+        graph.add_connection('B', 'E')
+        graph.add_connection('C', 'F')
+        graph.add_connection('C', 'G')
+        graph.add_connection('D', 'H')
+        graph.add_connection('E', 'I')
+        graph.add_connection('F', 'J')
+        graph.add_connection('G', 'K')
+
+        # Test BFS with max depth 3
+        result = graph.BFS('A', max_depth=3)
+        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2)])
+
+        # Test BFS with max depth 4
+        result = graph.BFS('A', max_depth=4)
+        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2), ('H', 3), ('I', 3), ('J', 3), ('K', 3)])
+
+        # Test BFS with max depth 5
+        result = graph.BFS('A', max_depth=5)
+        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2), ('H', 3), ('I', 3), ('J', 3), ('K', 3)])
+
+        # Test BFS with max depth 6
+        result = graph.BFS('A', max_depth=6)
+        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2), ('H', 3), ('I', 3), ('J', 3), ('K', 3)])
 
 if __name__ == '__main__':
     unittest.main()
