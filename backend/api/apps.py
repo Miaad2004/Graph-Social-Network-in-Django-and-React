@@ -13,9 +13,10 @@ class ApiConfig(AppConfig):
         all_connections = Connection.objects.all()
 
         for connection in all_connections:
-            global_graph.add_connection(str(connection.user1.id), str(connection.user2.id))
+            global_graph.add_connection(str(connection.user1.username), str(connection.user2.username))
         
-        print("graph:")
-        print(global_graph)
+        # print("graph:")
+        # print(global_graph)
+        global_graph.save_to_neo4j()
         import api.signals
     
