@@ -1,6 +1,8 @@
 import requests
 import time
 import json
+import os
+import random
 
 # Configs
 JSON_PATH = r"D:\Uni\Term_3\DS\Projs\GraphBasedRecommenderSystem\final-project-Miaad2004\users(99).json"
@@ -8,7 +10,11 @@ API_ADDR = "http://127.0.0.1:8000/api/"
 PAUSE_ON_EXCEPTION = False
 DELAY = 0.01
 DEFAULT_PASS = "123456789aA"
+IMAGE_DS_PATH = r"D:\CS\Datasets\celeb\img_align_celeba\img_align_celeba"
 
+# Helpers
+def get_random_image_path():
+    return os.path.join(IMAGE_DS_PATH, random.choice(os.listdir(IMAGE_DS_PATH)))
 
 def get_username(name):
     parts = name.split(' ')
@@ -45,14 +51,36 @@ def add_user(user):
     user['university'] = user.pop('universityLocation', None)
     user['birthday'] = user['birthday'].replace('/', '-')
     user['specialties'] = ','.join(user['specialties'])
-    return send_request(user, "register/")
+    user['profile_photo_path'] = get_random_image_path()  
+
+    data = {
+        'username': user['username'],
+        'password': user['password'],
+        'birthday': user['birthday'],
+        'university': user['university'],
+        'specialties': user['specialties'],
+        'field': user['field'],
+        'workplace': user['workplace']
+    }
+    
+    files = {
+        'profile_photo': (os.path.basename(user['profile_photo_path']), open(user['profile_photo_path'], 'rb'), 'image/jpeg')
+    }
+
+    # Send request with multipart/form-data
+    response = requests.post(f"{API_ADDR}register/", data=data, files=files)
+    
+    return response
 
 def add_all_users():
     for i, user in enumerate(JSON_DATA):
         try:
             response = add_user(user)
-            if (response.status_code != 201 and response.status_code != 200) or response.json()['error'] != None:
+            a = response.json()
+            if (response.status_code != 201 and response.status_code != 200) or response.json().get('error') != None:
                 raise Exception(response.text)
+            
+            print(f"Sample index: {i}, OK")
             
         except Exception as e:
             print(f"Sample index: {i}, Error: {e}")
