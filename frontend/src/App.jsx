@@ -2,19 +2,20 @@ import { useState, useEffect } from 'react'
 import './App.css'
 import MyNavbar from './components/Navbar/Navbar.jsx'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faDiagramProject, faRightFromBracket, faUserPen, faTrash , faWandMagicSparkles, faLock, faUser, faCalendar, faUniversity, faMapMarkerAlt, faBriefcase, faTags, faImage } from '@fortawesome/free-solid-svg-icons'
+import { faDiagramProject, faRightFromBracket, faUserPen, faTrash , faWandMagicSparkles, faLock, faUser, faCalendar, faUniversity, faMapMarkerAlt, faBriefcase, faTags, faImage, faUsers } from '@fortawesome/free-solid-svg-icons'
 import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
 import Connections from "./components/pages/Connections.jsx"
 import LoginForm from "./components/pages/LoginForm.jsx"
 import SignUpForm from "./components/pages/SignUpForm.jsx"
 import Suggestions from "./components/pages/Suggestions.jsx"
+import SearchView from "./components/pages/SearchView.jsx"
 import axios from 'axios'
 import React, { createContext } from 'react';
 import Cookies from 'js-cookie'; 
 import UserCard from './components/UserCard.jsx'
 import UserCardList from './components/UserCardList.jsx'
 
-library.add(faDiagramProject, faRightFromBracket, faUserPen, faTrash, faWandMagicSparkles, faLock, faUser, faCalendar, faUniversity, faMapMarkerAlt, faBriefcase, faTags, faImage)
+library.add(faDiagramProject, faRightFromBracket, faUserPen, faTrash, faWandMagicSparkles, faLock, faUser, faCalendar, faUniversity, faMapMarkerAlt, faBriefcase, faTags, faImage, faUsers)
 
 
 export const AxiosContext = createContext();
@@ -31,18 +32,19 @@ const client = axios.create({
 
 function App() {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginState, setLoginState] = useState({ isLoggedIn: false, userName: null });
 
   useEffect(() => {
-    if (!isLoggedIn && window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
+    if (!loginState.isLoggedIn && window.location.pathname !== '/login' && window.location.pathname !== '/signup') {
       navigate('/login');
     }
-  }, [isLoggedIn, navigate]);
+  }, [loginState, navigate]);
 
   return (
-    <LoginContext.Provider value={{ isLoggedIn, setIsLoggedIn }}>
+    <LoginContext.Provider value={{ loginState, setLoginState }}>
       <AxiosContext.Provider value={client}>
         <Routes>
+          <Route path="/search" element={<SearchView />} />
           <Route path="/login" element={<LoginForm />} />
           <Route path="/signup" element={<SignUpForm />} />
           <Route path="/connections" element={<Connections />} />
