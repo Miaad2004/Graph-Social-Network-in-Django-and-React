@@ -3,11 +3,15 @@ from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework import serializers
 
 from .apps import ApiConfig
 from .models import Connection, CustomUser
 from .serializers import UserLoginSerializer, UserSerializer, ConnectionSerializer
+from django.db.models import Q
 
+SUGGESTION_MAX_DEPTH = 5
+MAX_NUMBER_OF_SUGGESTIONS = 40
 
 class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserSerializer
@@ -16,7 +20,7 @@ class UserRegistrationView(generics.CreateAPIView):
     def perform_create(self, serializer):
         try:
             user = serializer.save()
-            return Response(status=status.HTTP_200_OK)
+            return Response({'error': None}, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_200_OK)
@@ -36,7 +40,12 @@ class UserLoginView(ObtainAuthToken):
             user = auth_serializer.validated_data['user']
             token, created = Token.objects.get_or_create(user=user)
             
-            return Response({'token': token.key, 'error': None}, status=status.HTTP_200_OK)
+            user_serializer = UserSerializer(user)
+            
+            return Response({'token': token.key, 'user': user_serializer.data, 'error': None}, status=status.HTTP_200_OK)
+        
+        except serializers.ValidationError:
+            return Response({'token': None, 'error': 'Invalid credentials'}, status=status.HTTP_200_OK)
         
         except Exception as e:
             return Response({'token': None, 'error': str(e)}, status=status.HTTP_200_OK)
@@ -50,7 +59,7 @@ class GetUserInfoView(APIView):
             username = request.data.get('username')
             
             if username == None:
-                 return Response({'connection': None, 'error': 'Username is required.'}, status=status.HTTP_200_OK)
+                 return Response({'connection': None, 'error': 'username is required.'}, status=status.HTTP_200_OK)
 
             try:
                 user = CustomUser.objects.get(username=username)
@@ -91,10 +100,19 @@ class UserDeleteView(APIView):
         return Response({'error':None}, status=status.HTTP_200_OK)
 
 
-class GetAllUsersView(generics.ListAPIView):
-    permission_classes = [permissions.AllowAny] 
+class SearchView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated] 
     serializer_class = UserSerializer
-    queryset = CustomUser.objects.all()
+
+    def get_queryset(self):
+        query = self.request.query_params.get('query', '')
+        if query:
+            return CustomUser.objects.filter(Q(username__icontains=query))
+        else:
+            return CustomUser.objects.all()
+    
+    def get_serializer_context(self):
+        return {'request': self.request}
 
 
 class AddConnectionView(APIView):
@@ -158,5 +176,34 @@ class GetAllConnectionsView(generics.ListAPIView):
         return queryset
 
 
-class GetSuggestionsView(generics.CreateAPIView):
-    pass
+class GetSuggestionsView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = UserSerializer
+    
+    def get_queryset(self):
+        current_user = self.request.user
+        global_graph = ApiConfig.global_graph
+        nearby_usernames = global_graph.BFS(current_user.username, max_depth=SUGGESTION_MAX_DEPTH)
+        print(nearby_usernames)
+        suggestions = []
+        for username, depth in nearby_usernames:
+            if depth <= 1:
+                continue
+            
+            corelation_score = current_user.get_correlation_score(CustomUser.objects.get(username=username))
+            suggestions.append((username, depth, corelation_score))
+        
+        suggestions.sort(key=lambda x: (x[2], -x[1]), reverse=True)
+        suggestions = suggestions[:MAX_NUMBER_OF_SUGGESTIONS]
+        
+        # log
+        for username, depth, corelation_score in suggestions:
+            print("Suggestion:", username, depth, corelation_score)
+        
+        return [CustomUser.objects.get(username=username) for username, _, _ in suggestions]
+            
+
+        
+            
+            
+            
