@@ -2,7 +2,7 @@ from datetime import datetime
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework import serializers
 from .models import Connection, CustomUser
-
+from django.db.models import Q
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(required=True, write_only=True)
@@ -31,6 +31,17 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(validated_data['password'])
         user.save()
         return user
+    
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            isConnected = Connection.objects.filter(
+                Q(user1=request.user, user2=instance) | 
+                Q(user1=instance, user2=request.user)
+            ).exists()
+            representation['isConnected'] = isConnected
+        return representation
 
     def delete(self, instance):
         instance.delete()
@@ -47,13 +58,14 @@ class UserLoginSerializer(serializers.Serializer):
 
 
 class ConnectionSerializer(serializers.ModelSerializer):
+    user1 = UserSerializer(read_only=True)
+    user2 = UserSerializer(read_only=True)
+
     class Meta:
         model = Connection
         fields = ('id', 'user1', 'user2', 'creation_date')
         read_only_fields = ('id', 'creation_date')
-
-
-
+    
     def delete(self, validated_data):
         username = validated_data.get('username')
         user2 = CustomUser.objects.get(username=username)
