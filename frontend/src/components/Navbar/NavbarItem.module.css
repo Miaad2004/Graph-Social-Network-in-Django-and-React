@@ -1,0 +1,10 @@
+.navlink {
+
+}
+.navlink:hover {
+    background-color: rgba(132, 167, 190, 0.368); 
+}
+
+.navlink:active {
+    background-color: rgba(117, 117, 117, 0.5); 
+}
