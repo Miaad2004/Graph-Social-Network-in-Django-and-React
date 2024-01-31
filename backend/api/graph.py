@@ -68,20 +68,24 @@ class Graph:
         return '\n'.join(f"{node}: {', '.join(connections)}" for node, connections in self._graph.items())
     
     def save_to_neo4j(self, uri: str="bolt://localhost:7687", user: str="neo4j", password: str="123456789") -> None:
-        neo_graph = NeoGraph(uri, auth=(user, password))
+        try:
+            neo_graph = NeoGraph(uri, auth=(user, password))
 
-        neo_graph.delete_all()
+            neo_graph.delete_all()
 
-        neo_nodes = {}
+            neo_nodes = {}
 
-        for node in self._graph:
-            neo_nodes[node] = Node("GraphNode", name=node)
-            neo_graph.create(neo_nodes[node])
+            for node in self._graph:
+                neo_nodes[node] = Node("GraphNode", name=node)
+                neo_graph.create(neo_nodes[node])
 
-        for node, connections in self._graph.items():
-            for connection in connections:
-                relationship = Relationship(neo_nodes[node], "CONNECTED_TO", neo_nodes[connection])
-                neo_graph.create(relationship)
+            for node, connections in self._graph.items():
+                for connection in connections:
+                    relationship = Relationship(neo_nodes[node], "CONNECTED_TO", neo_nodes[connection])
+                    neo_graph.create(relationship)
+                    
+        except Exception as e:
+            _ = input(f"Error: {e}\nPress any key to continue...")
 
 
 class TestGraph(unittest.TestCase):
