@@ -10,5 +10,6 @@ urlpatterns = [
     path("search/", SearchView.as_view()),
     path("get_connections/", GetAllConnectionsView.as_view()),
     path("add_connection/", AddConnectionView.as_view()),
-    path("remove_connection/", RemoveConnectionView.as_view())
+    path("remove_connection/", RemoveConnectionView.as_view()),
+    path("get_suggestions/", GetSuggestionsView.as_view()),
 ]
