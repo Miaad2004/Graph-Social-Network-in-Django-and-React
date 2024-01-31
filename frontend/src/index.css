@@ -1,0 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Roboto', sans-serif;
+    background: #7e7c7c;
+    background: url("../../assets/login_bg.jpg");
+    background-size: 100% 100%;
+    background-position: center; 
+    background-attachment: fixed; 
+  }
+  
+  .h1
+  {
+    text-align: left;
+  }
+  
+  
