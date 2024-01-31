@@ -33,7 +33,7 @@ function Suggestions()
                 <MyNavbar />
             </Col>
             <Col className="vh-100 overflow-auto">
-            <UserCardList users={users} setUsers={setUsers} removeUserOnDisconnect={true} />
+            <UserCardList users={users} setUsers={setUsers}/>
             </Col>
         </Row>
     </Container>
