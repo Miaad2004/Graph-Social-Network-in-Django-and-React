@@ -19,8 +19,9 @@ class UserSerializer(serializers.ModelSerializer):
                   'field', 'workplace', 'specialties', 'profile_photo')
 
     def create(self, validated_data):
-        user = CustomUser.objects.create(
+        user = CustomUser.objects.create_user(
             username=validated_data['username'],
+            password=validated_data['password'],
             birthday=validated_data['birthday'],
             university=validated_data['university'],
             field=validated_data['field'],
@@ -28,8 +29,6 @@ class UserSerializer(serializers.ModelSerializer):
             specialties=validated_data.get('specialties', None),
             profile_photo=validated_data.get('profile_photo', None)
         )
-        user.set_password(validated_data['password'])
-        user.save()
         return user
     
     def to_representation(self, instance):
