@@ -2,13 +2,17 @@ import requests
 import time
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 import random
+import re
+
+MAX_WORKERS = 4
 
 # Configs
-JSON_PATH = r"D:\Uni\Term_3\DS\Projs\GraphBasedRecommenderSystem\final-project-Miaad2004\users(99).json"
+JSON_PATH = r"D:\Uni\Term_3\DS\Projs\GraphBasedRecommenderSystem\final-project-Miaad2004\users(999).json"
 API_ADDR = "http://127.0.0.1:8000/api/"
 PAUSE_ON_EXCEPTION = False
-DELAY = 0.01
+DELAY = 0
 DEFAULT_PASS = "123456789aA"
 IMAGE_DS_PATH = r"D:\CS\Datasets\celeb\img_align_celeba\img_align_celeba"
 
@@ -17,8 +21,9 @@ def get_random_image_path():
     return os.path.join(IMAGE_DS_PATH, random.choice(os.listdir(IMAGE_DS_PATH)))
 
 def get_username(name):
-    parts = name.split(' ')
-    return parts[0] if parts else name
+    name = name.replace(' ', '_').lower()
+    name = re.sub(r'[^\w.@+-]', '', name)
+    return name
 
 def load_json_data(path):
     with open(path, 'r') as f:
@@ -50,8 +55,11 @@ def add_user(user):
     user['birthday'] = user.pop('dateOfBirth', None)
     user['university'] = user.pop('universityLocation', None)
     user['birthday'] = user['birthday'].replace('/', '-')
+    birthday_parts = user['birthday'].split('-')
+    birthday_parts[2] = "{:02d}".format(int(birthday_parts[2]))
+    user['birthday'] = '-'.join(birthday_parts)
     user['specialties'] = ','.join(user['specialties'])
-    user['profile_photo_path'] = get_random_image_path()  
+    user['profile_photo_path'] = get_random_image_path()
 
     data = {
         'username': user['username'],
@@ -73,24 +81,26 @@ def add_user(user):
     return response
 
 def add_all_users():
-    for i, user in enumerate(JSON_DATA):
-        try:
-            response = add_user(user)
-            a = response.json()
-            if (response.status_code != 201 and response.status_code != 200) or response.json().get('error') != None:
-                raise Exception(response.text)
-            
-            print(f"Sample index: {i}, OK")
-            
-        except Exception as e:
-            print(f"Sample index: {i}, Error: {e}")
-            
-            if PAUSE_ON_EXCEPTION:
-                input_ = input("continue?(y,n)")
-                if input_.lower() != 'y':
-                    break
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = [executor.submit(add_user, user) for user in JSON_DATA]
+        for i, future in enumerate(futures):
+            try:
+                response = future.result()
+                a = response.json()
+                if (response.status_code != 201 and response.status_code != 200) or response.json().get('error') != None:
+                    raise Exception(response.text)
                 
-        time.sleep(DELAY)
+                print(f"Sample index: {i}, OK")
+                
+            except Exception as e:
+                print(f"Sample index: {i}, Error: {e}")
+                
+                if PAUSE_ON_EXCEPTION:
+                    input_ = input("continue?(y,n)")
+                    if input_.lower() != 'y':
+                        break
+                    
+            time.sleep(DELAY)
 
 
 # Add Connections
@@ -137,19 +147,21 @@ def add_connections_for_user(user, token):
         time.sleep(DELAY)
 
 def add_all_connections():
-    for i, user in enumerate(JSON_DATA):
-        try:
-            token = login_and_get_token(user)
-            add_connections_for_user(user, token)
-            
-        except Exception as e:
-            print(f"Error processing user at index {i}")
-            print(e)
-            
-            if PAUSE_ON_EXCEPTION:
-                input_ = input("continue?(y,n)")
-                if input_.lower() != 'y':
-                    break
+    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        futures = [executor.submit(login_and_get_token, user) for user in JSON_DATA]
+        for i, future in enumerate(futures):
+            try:
+                token = future.result()
+                add_connections_for_user(JSON_DATA[i], token)
+                
+            except Exception as e:
+                print(f"Error processing user at index {i}")
+                print(e)
+                
+                if PAUSE_ON_EXCEPTION:
+                    input_ = input("continue?(y,n)")
+                    if input_.lower() != 'y':
+                        break
 
 # Main
 def main():
