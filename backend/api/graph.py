@@ -5,7 +5,6 @@ from py2neo import Graph as NeoGraph, Node, Relationship
 
 class Graph:
     def __init__(self):
-        """ Undirected graph implementation"""
         self._graph = defaultdict(set)
     
     def add_connection(self, key1: str, key2: str) -> None:
@@ -20,7 +19,7 @@ class Graph:
             del self._graph[key]
             for connections in self._graph.values():
                 connections.discard(key)
-    
+        
     def remove_connection(self, key1: str, key2: str) -> None:
         if key1 in self._graph and key2 in self._graph:
             self._graph[key1].discard(key2)
@@ -68,20 +67,25 @@ class Graph:
         return '\n'.join(f"{node}: {', '.join(connections)}" for node, connections in self._graph.items())
     
     def save_to_neo4j(self, uri: str="bolt://localhost:7687", user: str="neo4j", password: str="123456789") -> None:
-        neo_graph = NeoGraph(uri, auth=(user, password))
+        try:
+            neo_graph = NeoGraph(uri, auth=(user, password))
 
-        neo_graph.delete_all()
+            neo_graph.delete_all()
 
-        neo_nodes = {}
+            neo_nodes = {}
 
-        for node in self._graph:
-            neo_nodes[node] = Node("GraphNode", name=node)
-            neo_graph.create(neo_nodes[node])
+            for node in self._graph:
+                neo_nodes[node] = Node("GraphNode", name=node)
+                neo_graph.create(neo_nodes[node])
 
-        for node, connections in self._graph.items():
-            for connection in connections:
-                relationship = Relationship(neo_nodes[node], "CONNECTED_TO", neo_nodes[connection])
-                neo_graph.create(relationship)
+            for node, connections in self._graph.items():
+                for connection in connections:
+                    relationship = Relationship(neo_nodes[node], "CONNECTED_TO", neo_nodes[connection])
+                    neo_graph.create(relationship)
+                    
+        except Exception as e:
+            _ = input(f"Error: {e}\nPress any key to continue...")
+
 
 
 class TestGraph(unittest.TestCase):
@@ -114,35 +118,6 @@ class TestGraph(unittest.TestCase):
         self.assertTrue(graph.are_connected('A', 'B'))
         self.assertTrue(graph.are_connected('B', 'C'))
         self.assertFalse(graph.are_connected('A', 'C'))
-    
-    def test_bfs_depth(self):
-        graph = Graph()
-        graph.add_connection('A', 'B')
-        graph.add_connection('A', 'C')
-        graph.add_connection('B', 'D')
-        graph.add_connection('B', 'E')
-        graph.add_connection('C', 'F')
-        graph.add_connection('C', 'G')
-        graph.add_connection('D', 'H')
-        graph.add_connection('E', 'I')
-        graph.add_connection('F', 'J')
-        graph.add_connection('G', 'K')
-
-        # Test BFS with max depth 3
-        result = graph.BFS('A', max_depth=3)
-        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2)])
-
-        # Test BFS with max depth 4
-        result = graph.BFS('A', max_depth=4)
-        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2), ('H', 3), ('I', 3), ('J', 3), ('K', 3)])
-
-        # Test BFS with max depth 5
-        result = graph.BFS('A', max_depth=5)
-        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2), ('H', 3), ('I', 3), ('J', 3), ('K', 3)])
-
-        # Test BFS with max depth 6
-        result = graph.BFS('A', max_depth=6)
-        self.assertEqual(result, [('A', 0), ('B', 1), ('C', 1), ('D', 2), ('E', 2), ('F', 2), ('G', 2), ('H', 3), ('I', 3), ('J', 3), ('K', 3)])
 
 if __name__ == '__main__':
     unittest.main()

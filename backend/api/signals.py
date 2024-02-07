@@ -28,6 +28,7 @@ def update_global_graph_on_user_create(sender, instance, created, **kwargs):
         global_graph.add_node(instance.username)
         #print("graph:")
         #print(global_graph)
+        
 @receiver(post_delete, sender=CustomUser)
 def update_global_graph_on_user_delete(sender, instance, **kwargs):
     global_graph = ApiConfig.global_graph
